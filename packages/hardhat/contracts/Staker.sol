@@ -76,18 +76,22 @@ contract Staker {
     emit Stake(msg.sender, contribution);
 
     if (change > 0) {      
-      payable(msg.sender).transfer(change);
+      (bool success, ) = msg.sender.call{ value: change }('');
+
+      if (!success) revert();
     }
   }
 
   /**
     Will send the the given address the correspondent amount sotred in balances.
    */
-  function _withdraw(address payable _to) private {
+  function _withdraw(address _to) private {
     uint256 valueToWithdraw = balances[_to];
     balances[_to] = 0;
     
-    _to.transfer(valueToWithdraw);
+    (bool success, ) = _to.call{ value: valueToWithdraw }('');
+
+    if (!success) revert();
   }
 
   /**
@@ -98,7 +102,7 @@ contract Staker {
   }
 
   function withdraw() public afterDeadline hasBalance thresholdIsMet {
-    _withdraw(payable(msg.sender));
+    _withdraw(msg.sender);
   }
 
   function timeLeft() public view returns (uint) {
